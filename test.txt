@@ -1,4 +1,0 @@
-This is a text file.
-lorem
-lorem 10
-lorem 100
