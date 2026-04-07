@@ -1,7 +1,6 @@
-ipykernel
-numpy
-pandas
 streamlit
-matplotlib
+pandas
+numpy
 scikit-learn
 tensorflow
+matplotlib
