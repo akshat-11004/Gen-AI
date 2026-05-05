@@ -2,4 +2,5 @@
 langchain_venv
 1-Basics+Of+Langchain/
 *.bin
-GenAI/
+1.1-openai/
+1.2-ollama/
