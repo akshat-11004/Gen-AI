@@ -1,0 +1,12 @@
+langchain
+python-dotenv
+langchain-openai
+beautifulsoup4
+langchain-community
+langchain-classic
+langchain-ollama
+langchain-groq
+fastapi
+uvicorn
+langserve
+sse_starlette
