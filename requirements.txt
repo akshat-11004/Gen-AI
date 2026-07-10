@@ -18,3 +18,5 @@ langchain_huggingface
 sentence-transformers
 langchain-classic
 faiss-cpu
+arxiv
+wikipedia
