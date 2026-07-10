@@ -5,3 +5,16 @@ scikit-learn
 tensorflow
 matplotlib
 scikeras
+langchain
+python-dotenv
+langchain-openai
+langchain-community
+langchain-classic
+langchain-ollama
+langchain-groq
+transformers
+langchain-chroma
+langchain_huggingface
+sentence-transformers
+langchain-classic
+faiss-cpu
