@@ -2,8 +2,6 @@
 langchain_venv
 *.bin
 
-/5-SearchEngine
-
 /LangGraph
 /ChatwithDB
 *.zip
