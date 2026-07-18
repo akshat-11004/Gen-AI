@@ -20,3 +20,4 @@ langchain-classic
 faiss-cpu
 arxiv
 wikipedia
+ddgs
