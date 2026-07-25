@@ -1,11 +1,14 @@
 import streamlit as st
+import os
+import mysql.connector
 from pathlib import Path
-from langchain.agents import create_sql_agent
-from langchain.sql_database import SQLDatabase
-from langchain.agents.agent_types import AgentType
-from langchain.callbacks import StreamlitCallbackHandler
-from langchain.agents.agent_toolkits import SQLDatabaseToolkit
+from langchain_classic.agents import create_sql_agent
+from langchain_classic.sql_database import SQLDatabase
+from langchain_classic.agents.agent_types import AgentType
+from langchain_classic.callbacks import StreamlitCallbackHandler
+from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 import sqlite3
 from langchain_groq import ChatGroq
 
@@ -25,22 +28,35 @@ if radio_opt.index(selected_opt)==1:
     mysql_user=st.sidebar.text_input("MYSQL User")
     mysql_password=st.sidebar.text_input("MYSQL password",type="password")
     mysql_db=st.sidebar.text_input("MySQL database")
+    mysql_port=st.sidebar.number_input("MySQL port", min_value=1, max_value=65535, value=3306, step=1)
 else:
     db_uri=LOCALDB
 
-api_key=st.sidebar.text_input(label="GRoq API Key",type="password")
+api_key=st.sidebar.text_input(label="Groq API Key",type="password").strip()
 
 if not db_uri:
     st.info("Please enter the database information and uri")
+    st.stop()
 
 if not api_key:
     st.info("Please add the groq api key")
+    st.stop()
+
+# os.environ["GROQ_API_KEY"] = api_key
 
 ## LLM model
-llm=ChatGroq(groq_api_key=api_key,model_name="Llama3-8b-8192",streaming=True)
+llm=ChatGroq(groq_api_key=api_key,model_name="llama-3.3-70b-versatile",streaming=True)
+
+def normalize_mysql_host(mysql_host, mysql_port):
+    mysql_host = mysql_host.strip()
+    if ":" in mysql_host and mysql_host.count(":") == 1:
+        host, port = mysql_host.rsplit(":", 1)
+        if port.isdigit():
+            return host, int(port)
+    return mysql_host, mysql_port
 
 @st.cache_resource(ttl="2h")
-def configure_db(db_uri,mysql_host=None,mysql_user=None,mysql_password=None,mysql_db=None):
+def configure_db(db_uri,mysql_host=None,mysql_user=None,mysql_password=None,mysql_db=None,mysql_port=3306):
     if db_uri==LOCALDB:
         dbfilepath=(Path(__file__).parent/"student.db").absolute()
         print(dbfilepath)
@@ -50,10 +66,19 @@ def configure_db(db_uri,mysql_host=None,mysql_user=None,mysql_password=None,mysq
         if not (mysql_host and mysql_user and mysql_password and mysql_db):
             st.error("Please provide all MySQL connection details.")
             st.stop()
-        return SQLDatabase(create_engine(f"mysql+mysqlconnector://{mysql_user}:{mysql_password}@{mysql_host}/{mysql_db}"))   
+        mysql_host, mysql_port = normalize_mysql_host(mysql_host, mysql_port)
+        connection_url = URL.create(
+            drivername="mysql+mysqlconnector",
+            username=mysql_user,
+            password=mysql_password,
+            host=mysql_host,
+            port=mysql_port,
+            database=mysql_db,
+        )
+        return SQLDatabase(create_engine(connection_url))
     
 if db_uri==MYSQL:
-    db=configure_db(db_uri,mysql_host,mysql_user,mysql_password,mysql_db)
+    db=configure_db(db_uri,mysql_host,mysql_user,mysql_password,mysql_db,mysql_port)
 else:
     db=configure_db(db_uri)
 
@@ -64,6 +89,7 @@ agent=create_sql_agent(
     llm=llm,
     toolkit=toolkit,
     verbose=True,
+    temperature=0.2,
     agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION
 )
 
@@ -84,7 +110,3 @@ if user_query:
         response=agent.run(user_query,callbacks=[streamlit_callback])
         st.session_state.messages.append({"role":"assistant","content":response})
         st.write(response)
-
-        
-
-
