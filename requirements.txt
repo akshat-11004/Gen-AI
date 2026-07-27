@@ -21,3 +21,7 @@ faiss-cpu
 arxiv
 wikipedia
 ddgs
+validators
+youtube-transcript-api
+pytube
+unstructured
