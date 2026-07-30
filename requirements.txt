@@ -27,3 +27,9 @@ pytube
 unstructured
 numexpr
 langchain-experimental
+huggingface_hub
+cassio
+datasets
+tiktoken
+langchain-astradb       
+PyPDF2
