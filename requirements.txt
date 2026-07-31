@@ -33,3 +33,4 @@ datasets
 tiktoken
 langchain-astradb       
 PyPDF2
+gradio
