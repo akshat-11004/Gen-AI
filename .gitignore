@@ -2,7 +2,9 @@
 langchain_venv
 *.bin
 
+/oracle
 /LangGraph
+
 *.zip
 # Python-generated files
 __pycache__/

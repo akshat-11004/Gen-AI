@@ -24,7 +24,7 @@ def generate_response(prompt):
         "stream":False
     }
 
-    response =requests.post(url,headers=headers,json=data)
+    response = requests.post(url,headers=headers,json=data)
 
     if response.status_code == 200:
         actual_response = response.json()["response"]
@@ -32,7 +32,6 @@ def generate_response(prompt):
         return actual_response
     else:
         print("error:",response.text)
-
 
 interface=gr.Interface(
     fn=generate_response,
