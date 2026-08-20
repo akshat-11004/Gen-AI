@@ -5,6 +5,7 @@ langchain_venv
 /oracle
 /LangGraph
 /12-AWS
+
 *.zip
 # Python-generated files
 __pycache__/

@@ -4,10 +4,10 @@ import mysql.connector
 from pathlib import Path
 from langchain_classic.agents import create_sql_agent
 from langchain_classic.sql_database import SQLDatabase
-from langchain_classic.agents.agent_types import AgentType
 from langchain_classic.callbacks import StreamlitCallbackHandler
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from sqlalchemy import create_engine
+from sqlalchemy import exc as sqlalchemy_exc
 from sqlalchemy.engine import URL
 import sqlite3
 from langchain_groq import ChatGroq
@@ -45,7 +45,7 @@ if not api_key:
 # os.environ["GROQ_API_KEY"] = api_key
 
 ## LLM model
-llm=ChatGroq(groq_api_key=api_key,model_name="llama-3.3-70b-versatile",streaming=True)
+llm=ChatGroq(groq_api_key=api_key,model_name="openai/gpt-oss-120b",streaming=True,temperature=0.2)
 
 def normalize_mysql_host(mysql_host, mysql_port):
     mysql_host = mysql_host.strip()
@@ -55,7 +55,26 @@ def normalize_mysql_host(mysql_host, mysql_port):
             return host, int(port)
     return mysql_host, mysql_port
 
-@st.cache_resource(ttl="2h")
+def show_database_error(error):
+    original_error = getattr(error, "orig", error)
+    error_number = getattr(original_error, "errno", None)
+
+    st.error("Database connection failed.")
+
+    if error_number == 2003:
+        st.info("MySQL server is not reachable. Check that MySQL is running and the host/port are correct.")
+    elif error_number == 2005:
+        st.info("MySQL host is invalid. Use host `localhost` and port `3306` separately.")
+    elif error_number == 1045:
+        st.info("MySQL login failed. Check the username and password.")
+    elif error_number == 1049:
+        st.info("The selected MySQL database does not exist.")
+    else:
+        st.info("Check your MySQL host, port, username, password, database name, and server status.")
+
+    st.caption(f"Driver error: {original_error}")
+    st.stop()
+
 def configure_db(db_uri,mysql_host=None,mysql_user=None,mysql_password=None,mysql_db=None,mysql_port=3306):
     if db_uri==LOCALDB:
         dbfilepath=(Path(__file__).parent/"student.db").absolute()
@@ -75,12 +94,18 @@ def configure_db(db_uri,mysql_host=None,mysql_user=None,mysql_password=None,mysq
             port=mysql_port,
             database=mysql_db,
         )
-        return SQLDatabase(create_engine(connection_url))
+        engine = create_engine(connection_url)
+        with engine.connect():
+            pass
+        return SQLDatabase(engine)
     
-if db_uri==MYSQL:
-    db=configure_db(db_uri,mysql_host,mysql_user,mysql_password,mysql_db,mysql_port)
-else:
-    db=configure_db(db_uri)
+try:
+    if db_uri==MYSQL:
+        db=configure_db(db_uri,mysql_host,mysql_user,mysql_password,mysql_db,mysql_port)
+    else:
+        db=configure_db(db_uri)
+except (mysql.connector.Error, sqlalchemy_exc.SQLAlchemyError) as error:
+    show_database_error(error)
 
 ## toolkit
 toolkit=SQLDatabaseToolkit(db=db,llm=llm)
@@ -89,8 +114,7 @@ agent=create_sql_agent(
     llm=llm,
     toolkit=toolkit,
     verbose=True,
-    temperature=0.2,
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION
+    agent_type="tool-calling"
 )
 
 if "messages" not in st.session_state or st.sidebar.button("Clear message history"):
@@ -107,6 +131,9 @@ if user_query:
 
     with st.chat_message("assistant"):
         streamlit_callback=StreamlitCallbackHandler(st.container())
-        response=agent.run(user_query,callbacks=[streamlit_callback])
-        st.session_state.messages.append({"role":"assistant","content":response})
-        st.write(response)
+        try:
+            response=agent.run(user_query,callbacks=[streamlit_callback])
+            st.session_state.messages.append({"role":"assistant","content":response})
+            st.write(response)
+        except (mysql.connector.Error, sqlalchemy_exc.SQLAlchemyError) as error:
+            show_database_error(error)
