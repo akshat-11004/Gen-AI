@@ -43,3 +43,6 @@ boto3
 awscli
 mysql-connector-python
 langchain_nvidia_ai_endpoints
+pinecone
+pinecone-text
+pinecone-notebooks

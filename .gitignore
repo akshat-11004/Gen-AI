@@ -15,5 +15,6 @@ dist/
 wheels/
 *.egg-info
 
+*.pdf
 # Virtual environments
 .venv

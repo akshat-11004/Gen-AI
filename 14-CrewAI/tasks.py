@@ -5,7 +5,7 @@ from agents import blog_researcher,blog_writer
 ## Research Task
 research_task = Task(
   description=(
-    "Identify the video {topic} from the YouTube channel '@krishnaik06'."
+    "Identify the video {topic} from the YouTube channel."
     "Get detailed information about the video from the channel video."
   ),
   expected_output='A comprehensive paragraphs long report based on the {topic} of video content.',
